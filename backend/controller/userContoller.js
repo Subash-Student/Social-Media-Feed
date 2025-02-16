@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../model/User.js";
-
+import CryptoJS from "crypto-js";
 
 // User Registration
 export const registerUser = async (req, res) => {
@@ -26,7 +26,8 @@ export const registerUser = async (req, res) => {
       });
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server Error' });
+    console.log(error)
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
 
@@ -34,7 +35,7 @@ export const registerUser = async (req, res) => {
 export const loginUser = (req, res) => {
   const { email, password } = req.body;
 
-  // Check if the user exists
+ try {
   User.findUserByEmail(email, async (err, result) => {
     if (err) return res.status(500).json({ error: 'Server Error' });
     if (result.length === 0) {
@@ -49,17 +50,66 @@ export const loginUser = (req, res) => {
     }
 
     // Create JWT Token
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET);
+    const jwtToken = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET);
+    
+    const token = setEncryptedToken(jwtToken);
 
     res.status(200).json({
       message: 'Login successful',
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-      },
+      token
     });
   });
+ } catch (error) {
+   console.log(error)
+   return res.status(500).json({ error: 'Internal Server Error' });
+
+ }
+ 
 };
 
+
+export const getUserData = async(req,res)=>{
+ 
+  const id = req.id;
+
+  try {
+    User.findUserById(id, async (err, result) => {
+      if (err) return res.status(500).json({ error: 'Server Error' });
+      if (result.length === 0) {
+        return res.status(400).json({ error: 'Invalid id' });
+      }
+  
+      const user = result[0];
+
+      res.status(200).json({
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+        },
+      });
+    });
+
+  } catch (error) {
+    console.log(error)
+   return res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export function setEncryptedToken(token) {
+  const encryptedToken = CryptoJS.AES.encrypt(token, process.env.SECRETKEY).toString();
+  return encryptedToken;
+}

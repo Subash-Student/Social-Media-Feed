@@ -31,7 +31,13 @@ const findUserByEmail = (email, callback) => {
   db.query(query, [email], callback);
 };
 
+const findUserById = (id, callback) => {
+  const query = 'SELECT * FROM users WHERE id = ?';
+  db.query(query, [id], callback);
+};
+
 export default {
     addUser,
     findUserByEmail,
+    findUserById
   };
