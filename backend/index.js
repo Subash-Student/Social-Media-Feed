@@ -6,6 +6,7 @@ import db from "./config/db.js";
 import { Server } from "socket.io";
 import http from "http";
 import userRouter from "./routes/userRoutes.js";
+import postRouter from "./routes/postRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -31,19 +32,19 @@ app.use(
 app.use(express.json());
 
 // Socket.io connection handling
-io.on("connection", (socket) => {
-  console.log("userConnected:", socket.id);
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
 
-  socket.on("newComment", (data) => {
-    io.emit("updateComments", data);
+  socket.on('likePost', (postId) => {
+    io.emit('postLiked', postId);
   });
 
-  socket.on("likePost", (data) => {
-    io.emit("updateLikes", data);
+  socket.on('commentPost', (postId) => {
+    io.emit('postCommented', postId);
   });
 
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
   });
 });
 
@@ -53,6 +54,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/users", userRouter);
+app.use("/api",postRouter);
 
 // Start the server
 server.listen(PORT, () => {

@@ -65,7 +65,7 @@ const Feed = () => {
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px',marginTop:"50px" }}>
+    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', }}>
       {posts.map(post => (
         <Card key={post.id} sx={{ marginBottom: '20px', borderRadius: '15px', boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)' }}>
           <CardHeader
