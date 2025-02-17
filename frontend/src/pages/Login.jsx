@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { TextField, Button, Typography, Box, Alert, Link, Grid, Paper } from '@mui/material';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { StoreContext } from '../context/context';
 
 const Login = () => {
+
+  const {setToken} = useContext(StoreContext);
+  
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -21,6 +25,7 @@ const Login = () => {
     try {
       const res = await axios.post('http://localhost:5000/api/users/login', formData);
       localStorage.setItem('token', res.data.token);
+      setToken(res.data.token)
       toast.success(res.data.message);
       setError('');
       navigate('/');

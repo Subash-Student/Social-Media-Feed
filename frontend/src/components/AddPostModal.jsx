@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { Modal, Box, Typography, TextField, Button, IconButton, CircularProgress } from '@mui/material';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import CloseIcon from '@mui/icons-material/Close';
+import {toast} from "react-toastify"
+import axios from 'axios';
+import { StoreContext } from '../context/context.jsx';
 
 // Inline styles for the modal box
 const modalStyle = {
@@ -37,25 +40,53 @@ const AddPostModal = ({ open, onClose, onAddPost }) => {
   const [postContent, setPostContent] = useState('');
   const [postImage, setPostImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handlePost = () => {
-    if (postContent.trim()) {
-      setLoading(true);
-      // Simulate post submission (you can make an API call here)
-      setTimeout(() => {
-        onAddPost({ content: postContent, image: postImage });
+  const { userData } = useContext(StoreContext); 
+  const handlePost = async () => {
+    if (!postContent.trim()) {
+      setError('Post content cannot be empty.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    const formData = new FormData();
+    formData.append('user_id', userData.id); 
+  
+    formData.append('content', postContent); // Add post content
+    if (postImage) {
+      formData.append('postImage', postImage); // Add post image file
+    }
+
+    try {
+      const res = await axios.post('http://localhost:5000/api/add-post', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // Required for file uploads
+        },
+      });
+
+      if (res.status === 201) {
+        toast.success(res.message)
         setPostContent('');
         setPostImage(null);
-        setLoading(false);
-        onClose();
-      }, 1000);
+        onAddPost(res.data); // Notify parent component of the new post
+        onClose(); // Close the modal
+      }
+    } catch (err) {
+      toast.error(err.message)
+      console.error('Error creating post:', err);
+      setError('Failed to create post. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setPostImage(URL.createObjectURL(file)); // Preview image
+      setPostImage(file); // Store the file for upload
     }
   };
 
@@ -63,12 +94,14 @@ const AddPostModal = ({ open, onClose, onAddPost }) => {
     <Modal open={open} onClose={onClose}>
       <Box sx={modalStyle}>
         <Box display="flex" justifyContent="space-between" alignItems="center" width="100%">
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Create Post</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+            Create Post
+          </Typography>
           <IconButton onClick={onClose} sx={{ color: '#757575' }}>
             <CloseIcon />
           </IconButton>
         </Box>
-        
+
         <TextField
           fullWidth
           multiline
@@ -81,7 +114,11 @@ const AddPostModal = ({ open, onClose, onAddPost }) => {
 
         <label htmlFor="image-upload" style={imageInputStyle}>
           {postImage ? (
-            <img src={postImage} alt="Post Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} />
+            <img
+              src={URL.createObjectURL(postImage)} // Preview the selected image
+              alt="Post Preview"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }}
+            />
           ) : (
             <>
               <PhotoCamera style={{ fontSize: '50px', color: '#757575' }} />
@@ -89,23 +126,18 @@ const AddPostModal = ({ open, onClose, onAddPost }) => {
             </>
           )}
         </label>
-        <input
-          type="file"
-          id="image-upload"
-          hidden
-          onChange={handleImageChange}
-        />
+        <input type="file" id="image-upload" hidden onChange={handleImageChange} />
+
+        {error && (
+          <Typography color="error" sx={{ mt: 2 }}>
+            {error}
+          </Typography>
+        )}
 
         {loading ? (
           <CircularProgress sx={{ marginTop: '20px' }} />
         ) : (
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            onClick={handlePost}
-            sx={{ mt: 3 }}
-          >
+          <Button variant="contained" color="primary" fullWidth onClick={handlePost} sx={{ mt: 3 }}>
             Post
           </Button>
         )}

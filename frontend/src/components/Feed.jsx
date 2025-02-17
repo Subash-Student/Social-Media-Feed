@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Avatar, Card, CardHeader, CardMedia, CardContent, CardActions, IconButton, Typography, TextField, Button, Badge } from '@mui/material';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import SendIcon from '@mui/icons-material/Send';
 import CircleIcon from '@mui/icons-material/Circle';
+import { StoreContext } from '../context/context';
+import axios from "axios"
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const postsData = [
   {
@@ -35,57 +38,100 @@ const postsData = [
 ];
 
 const Feed = () => {
-  const [posts, setPosts] = useState(postsData);
+  // const [posts, setPosts] = useState(postsData);
+  const { posts, setPosts } = useContext(StoreContext);  // Get both posts and setPosts from context
+  const [commentsText, setCommentsText] = useState({});
+  const [isOpen,setIsopen] = useState(false);
 
-  const handleLike = (postId) => {
-    const updatedPosts = posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1,
-          isLiked: !post.isLiked
-        };
+  const handleLike = async (postId) => {
+    try {
+      const post = posts.find((p) => p.id === postId);
+      
+      if (post.isLiked) {
+        await axios.delete(`http://localhost:5000/api/posts/${postId}/like`);
+      } else {
+        await axios.post(`http://localhost:5000/api/posts/${postId}/like`);
       }
-      return post;
-    });
-    setPosts(updatedPosts);
+
+      // Update the local state
+      const updatedPosts = posts.map((p) =>
+        p.id === postId
+          ? { ...p, likes: p.isLiked ? p.likes - 1 : p.likes + 1, isLiked: !p.isLiked }
+          : p
+      );
+      setPosts(updatedPosts);
+    } catch (error) {
+      console.error('Error updating like:', error);
+    } finally {
+      
+    }
   };
 
-  const handleComment = (postId, comment) => {
+  // Handle adding a comment
+  const handleComment = async (postId) => {
+    const text = commentsText[postId];
+    if (!text?.trim()) return;
+
+    try {
+      
+      const response = await axios.post(`http://localhost:5000/api/posts/${postId}/comments`, {
+        user: 'You', // Replace with the logged-in user's name
+        text,
+      });
+
+      // Update the local state
+      const updatedPosts = posts.map((p) =>
+        p.id === postId
+          ? { ...p, comments: [...p.comments, response.data] }
+          : p
+      );
+      setPosts(updatedPosts);
+      setCommentsText({ ...commentsText, [postId]: '' }); // Clear the comment input for the post
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    } finally {
+      
+    }
+  };
+  const handleDeleteComment =async (postId, commentIndex) => {
     const updatedPosts = posts.map(post => {
-      if (post.id === postId && comment.trim() !== '') {
-        return {
-          ...post,
-          comments: [...post.comments, { user: 'You', text: comment }]
-        };
+      if (post.id === postId) {
+        const updatedComments = [...post.comments];
+        updatedComments.splice(commentIndex, 1); // Remove the comment at the specified index
+        return { ...post, comments: updatedComments };
       }
       return post;
     });
+    try {
+      const response = await axios.delete(`http://localhost:5000/api/posts/${postId}/comments/${commentIndex}`);
+    } catch (error) {
+       console.log(error);
+    }
     setPosts(updatedPosts);
   };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px', }}>
-      {posts.map(post => (
+    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
+      {(posts || []).map(post => (
         <Card key={post.id} sx={{ marginBottom: '20px', borderRadius: '15px', boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)' }}>
           <CardHeader
             avatar={
-              <Badge
-                overlap="circular"
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                badgeContent={
-                  post.isOnline ? (
-                    <CircleIcon sx={{ color: 'green', fontSize: '10px' }} />
-                  ) : (
-                    <CircleIcon sx={{ color: 'grey', fontSize: '10px' }} />
-                  )
-                }
-              >
+              // <Badge
+              //   overlap="circular"
+              //   anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              //   badgeContent={
+              //     post.isOnline ? (
+              //       <CircleIcon sx={{ color: 'green', fontSize: '10px' }} />
+              //     ) : (
+              //       <CircleIcon sx={{ color: 'grey', fontSize: '10px' }} />
+              //     )
+              //   }
+              // >
                 <Avatar src={post.profilePic} />
-              </Badge>
+              // </Badge>
             }
             title={post.userName}
-            subheader={post.isOnline ? 'Online' : 'Offline'}
+            // subheader={post.isOnline ? 'Online' : 'Offline'}
           />
           {post.postImage && (
             <CardMedia
@@ -110,27 +156,53 @@ const Feed = () => {
             <Typography>{post.likes} Likes</Typography>
             <IconButton>
               <ChatBubbleOutlineIcon />
-            </IconButton>
-            <Typography>{post.comments.length} Comments</Typography>
+            </IconButton >
+            <Typography style={{cursor:"pointer"}} onClick={()=>setIsopen(prev=>!prev)}>{post.comments.length} Comments</Typography>
           </CardActions>
+          {isOpen && 
           <CardContent>
-            {post.comments.map((comment, index) => (
-              <Typography key={index} variant="body2" sx={{ marginBottom: '5px' }}>
-                <strong>{comment.user}:</strong> {comment.text}
-              </Typography>
-            ))}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <TextField
-                variant="outlined"
-                placeholder="Add a comment..."
-                size="small"
-                fullWidth
-              />
-              <IconButton>
-                <SendIcon />
-              </IconButton>
-            </div>
-          </CardContent>
+          {/* Comments Section */}
+          <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '8px', padding: '10px' }}>
+            {post.comments.map((comment, index) => {
+              // Parse the JSON string to an object
+              const parsedComment = JSON.parse(comment);
+              
+              // Access the user and text properties
+              const user = parsedComment.user.user; // Accessing the user name
+              const text = parsedComment.user.text; // Accessing the comment text
+
+              return (
+                <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                  <Typography variant="body2">
+                    <strong>{user}:</strong> {text}
+                  </Typography>
+                  {user === "You" &&
+                  <IconButton onClick={() => handleDeleteComment(post.id, index)} size="small">
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                  }
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Add Comment Section */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+            <TextField
+              variant="outlined"
+              placeholder="Add a comment..."
+              size="small"
+              fullWidth
+              value={commentsText[post.id] || ''}
+              onChange={(e) => setCommentsText({ ...commentsText, [post.id]: e.target.value })}
+            />
+            <IconButton onClick={() => handleComment(post.id)}>
+              <SendIcon />
+            </IconButton>
+          </div>
+        </CardContent>
+          }
+          
         </Card>
       ))}
     </div>

@@ -2,29 +2,33 @@
 import express from 'express';
 import multer from 'multer';
 import {
-    createPost,
-    fetchPosts,
-    toggleLike,
-    addPostComment,
-    fetchUserPosts,
+   getAllPosts,
+   getPostById,
+//    addPost,
+   addLike,
+   removeComment,
+   removeLike,addComment,
+   createPost
 } from '../controller/postController.js'; 
 
 const postRouter = express.Router();
-const upload = multer({ dest: 'uploads/' }); // Configure multer for file uploads
 
-// 1. Create Post: Add new post with text and optional image
-postRouter.post('/add-post', upload.single('image'), createPost);
+const storage = multer.diskStorage({
+    destination:"uploads",
+    filename :(req,file,cb)=>{
+       return cb(null,`${Date.now()} ${file.originalname}`)
+    }
+})
 
-// 2. Get Posts: Fetch all posts with sorting and filtering
-postRouter.get('/posts', fetchPosts);
+const upload = multer({storage:storage}); 
 
-// 3. Like/Unlike Post: Toggle like status
-postRouter.post('/posts/:postId/like', toggleLike);
+postRouter.post('/add-post', upload.single('postImage'), createPost);
+postRouter.get('/posts', getAllPosts);
+postRouter.get('/posts/:id', getPostById);
+postRouter.post('/posts/:id/like', addLike);
+postRouter.delete('/posts/:id/like', removeLike);
+postRouter.post('/posts/:id/comments', addComment);
+postRouter.delete('/posts/:postId/comments/:commentIndex', removeComment);
 
-// 4. Add Comment: Add a comment to a post
-postRouter.post('/posts/:postId/comments', addPostComment);
-
-// 5. Get User Posts: Retrieve posts by a specific user
-postRouter.get('/users/:userId/posts', fetchUserPosts);
 
 export default postRouter;

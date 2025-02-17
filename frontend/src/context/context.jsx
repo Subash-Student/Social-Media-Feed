@@ -12,7 +12,7 @@ const navigate = useNavigate();
 
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [userData, setUserData] = useState({});
-
+  const [posts,setPosts] = useState();
   const fetchUser = useCallback(async (token) => {
     try {
       const response = await axios.get("http://localhost:5000/api/users/profile", {
@@ -21,7 +21,8 @@ const navigate = useNavigate();
       });
 
       if (response.status === 200) {
-        setUserData(response.data.user);
+        
+        setUserData(response.data.user[0]);
         navigate("/");
 
       } else {
@@ -34,16 +35,38 @@ const navigate = useNavigate();
     }
   }, []);
 
+  const fetchPosts = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/posts');
+      setPosts(res.data.posts);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+
+
   useEffect(() => {
     if (token) {
       fetchUser(token);
+      fetchPosts()
     }
   }, [token, fetchUser]);
+
+  useEffect(() => {
+    if (posts) {
+      console.log('Posts updated:', posts);
+    }
+  }, [posts]);
+
 
   const contextValue = {
     token,
     setToken,
     userData,
+    posts,
+    setPosts,
+    fetchPosts
   };
 
   return (

@@ -2,123 +2,138 @@ import db from "../config/db.js";
 
 const createPostsTable = `
 CREATE TABLE IF NOT EXISTS posts (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    content TEXT,
-    image VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userName VARCHAR(255) NOT NULL,
+    profilePic VARCHAR(255),
+    user_id VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    postImage VARCHAR(255),
+    likes INT DEFAULT 0,
+    isLiked BOOLEAN DEFAULT FALSE,
+    isOnline BOOLEAN DEFAULT TRUE,
+    comments JSON
 );
 `;
 
-const createLikeTable = `
-CREATE TABLE IF NOT EXISTS likes (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    post_id INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
-);
-`;
-
-const createCommentsTable = `
-CREATE TABLE IF NOT EXISTS comments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    post_id INT NOT NULL,
-    user_id INT NOT NULL,
-    comment TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-`;
-
+// Create the posts table with error handling
 db.query(createPostsTable, (err, result) => {
     if (err) {
-        console.error('Error creating posts table:', err);
-    } else {
-        console.log('Posts table ready');
+        console.error('Error creating posts table:', err.message);
+        return;
     }
+    console.log('✅ Posts table ready');
 });
 
-db.query(createLikeTable, (err, result) => {
-    if (err) {
-        console.error('Error creating likes table:', err);
-    } else {
-        console.log('Likes table ready');
-    }
-});
-
-db.query(createCommentsTable, (err, result) => {
-    if (err) {
-        console.error('Error creating comments table:', err);
-    } else {
-        console.log('Comments table ready');
-    }
-});
-
-
-const addPost = (user_id, content, image, callback) => {
-    const query = 'INSERT INTO posts (user_id, content, image) VALUES (?, ?, ?)';
-    db.query(query, [user_id, content, image], callback);
+// Get all posts with improved error handling
+const getAllPosts = () => {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM posts;';
+        db.query(query, (err, results) => {
+            if (err) {
+                console.error('Error executing query in getAllPosts:', err.message);
+                return reject(new Error('Failed to retrieve posts. Please try again later.'));
+            }
+            resolve(results);
+        });
+    });
 };
 
-// 2. Fetch all posts with sorting and filtering
-const getPosts = (sort = 'newest', user_id = null, callback) => {
-    let query = 'SELECT * FROM posts';
-    if (user_id) {
-        query += ' WHERE user_id = ?';
-    }
-
-    // Sorting
-    if (sort === 'newest') {
-        query += ' ORDER BY created_at DESC';
-    } else if (sort === 'oldest') {
-        query += ' ORDER BY created_at ASC';
-    }
-
-    db.query(query, [user_id], callback);
+// Get post by ID with error handling
+const getPostById = (id) => {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM posts WHERE id = ?';
+        db.query(query, [id], (err, results) => {
+            if (err) {
+                console.error('Error executing query in getPostById:', err.message);
+                return reject(new Error('Failed to retrieve the post. Please try again later.'));
+            }
+            resolve(results[0]);
+        });
+    });
 };
 
-// 3. Check if a user has liked a post
-const checkLikeStatus = (user_id, post_id, callback) => {
-    const query = 'SELECT * FROM likes WHERE user_id = ? AND post_id = ?';
-    db.query(query, [user_id, post_id], callback);
+// Add a new post with error handling
+const addPost = (user_id, content, postImage, userName, profilePic) => {
+    return new Promise((resolve, reject) => {
+        const query = 'INSERT INTO posts (user_id, content, postImage, userName, profilePic, likes, isLiked, comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        const comments = []; 
+        db.query(query, [user_id, content, postImage, userName, profilePic, 0, false, JSON.stringify(comments)], (err, result) => {
+            if (err) {
+                console.error('Error executing query in addPost:', err.message);
+                return reject(new Error('Failed to add post. Please try again later.'));
+            }
+            resolve(result.insertId);
+        });
+    });
 };
 
-// 4. Like a post
-const likePost = (user_id, post_id, callback) => {
-    const query = 'INSERT INTO likes (user_id, post_id) VALUES (?, ?)';
-    db.query(query, [user_id, post_id], callback);
+// Add a like to a post with error handling
+const addLike = (id) => {
+    return new Promise((resolve, reject) => {
+        const query = 'UPDATE posts SET likes = likes + 1, isLiked = TRUE WHERE id = ?';
+        db.query(query, [id], (err, result) => {
+            if (err) {
+                console.error('Error executing query in addLike:', err.message);
+                return reject(new Error('Failed to like the post. Please try again later.'));
+            }
+            resolve(result);
+        });
+    });
 };
 
-// 5. Unlike a post
-const unlikePost = (user_id, post_id, callback) => {
-    const query = 'DELETE FROM likes WHERE user_id = ? AND post_id = ?';
-    db.query(query, [user_id, post_id], callback);
+// Remove a like from a post with error handling
+const removeLike = (id) => {
+    return new Promise((resolve, reject) => {
+        const query = 'UPDATE posts SET likes = likes - 1, isLiked = FALSE WHERE id = ?';
+        db.query(query, [id], (err, result) => {
+            if (err) {
+                console.error('Error executing query in removeLike:', err.message);
+                return reject(new Error('Failed to unlike the post. Please try again later.'));
+            }
+            resolve(result);
+        });
+    });
 };
 
-// 6. Add a comment to a post
-const addComment = (post_id, user_id, comment, callback) => {
-    const query = 'INSERT INTO comments (post_id, user_id, comment) VALUES (?, ?, ?)';
-    db.query(query, [post_id, user_id, comment], callback);
+// Add a comment to a post with error handling
+const addComment = (postId, user, text) => {
+    return new Promise((resolve, reject) => {
+        const query = 'UPDATE posts SET comments = JSON_ARRAY_APPEND(comments, "$", ?) WHERE id = ?';
+        const comment = { user, text }; 
+        db.query(query, [JSON.stringify(comment), postId], (err, result) => {
+            if (err) {
+                console.error('Error executing query in addComment:', err.message);
+                return reject(new Error('Failed to add comment. Please try again later.'));
+            }
+            resolve(result);
+        });
+    });
 };
 
-// 7. Fetch posts by a specific user
-const getUserPosts = (user_id, callback) => {
-    const query = 'SELECT * FROM posts WHERE user_id = ? ORDER BY created_at DESC';
-    db.query(query, [user_id], callback);
+// Remove a comment from a post with error handling
+const removeComment = (postId, commentIndex) => {
+    return new Promise((resolve, reject) => {
+        const query = `
+            UPDATE posts 
+            SET comments = JSON_REMOVE(comments, ?) 
+            WHERE id = ?;
+        `;
+        db.query(query, [`$[${commentIndex}]`, postId], (err, result) => {
+            if (err) {
+                console.error('Error executing query in removeComment:', err.message);
+                return reject(new Error('Failed to remove comment. Please try again later.'));
+            }
+            resolve(result);
+        });
+    });
 };
 
-export {
+export default {
+    getAllPosts,
+    getPostById,
     addPost,
-    getPosts,
-    checkLikeStatus,
-    likePost,
-    unlikePost,
+    addLike,
+    removeLike,
     addComment,
-    getUserPosts,
+    removeComment
 };
-
-

@@ -1,97 +1,95 @@
+import Post from "../model/Post.js"
+import User from "../model/User.js";
 
-import {
-    addPost,
-    getPosts,
-    checkLikeStatus,
-    likePost,
-    unlikePost,
-    addComment,
-    getUserPosts,
-} from '../model/Post.js'; 
+export const getAllPosts = async (req, res) => {
+    try {
+        const posts = await Post.getAllPosts(); 
+        res.status(200).json({posts});
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
 
-// Create Post: Add new post with text and optional image
+
+export const getPostById = async (req, res) => {
+    try {
+        const post = await Post.getPostById(req.params.id);
+        res.status(200).json(post);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// export const addPost = async (req, res) => {
+//     try {
+//         const postId = await Post.addPost(req.body);
+//         res.status(201).json({ id: postId, ...req.body });
+//     } catch (err) {
+//         res.status(500).json({ message: err.message });
+//     }
+// };
+
 export const createPost = (req, res) => {
     const { user_id, content } = req.body;
-    const image = req.file ? req.file.path : null; // Get the uploaded image path
+    const postImage = req.file ? req.file.path : null; // Get the uploaded image path
 
-    addPost(user_id, content, image, (err, result) => {
-        if (err) {
-            console.error('Error creating post:', err);
-            return res.status(500).json({ error: 'Failed to create post' });
+    User.findUserById(user_id, async (err, result) => {
+        if (err) return res.status(500).json({ error: 'Server Error' });
+        if (result.length === 0) {
+          return res.status(400).json({ error: 'Invalid id' });
         }
-        res.status(201).json({ message: 'Post created successfully', postId: result.insertId });
-    });
+    
+        const user = result[0];
+
+        Post.addPost(user_id, content, postImage,user.username,user.profilepic, (err, result) => {
+            if (err) {
+                console.error('Error creating post:', err);
+                return res.status(500).json({ error: 'Failed to create post' });
+            }
+            res.status(201).json({ message: 'Post created successfully', postId: result.insertId });
+        });
+ } )
 };
 
-// Get Posts: Fetch all posts with sorting and filtering
-export const fetchPosts = (req, res) => {
-    const { sort = 'newest', user_id } = req.query;
 
-    getPosts(sort, user_id, (err, results) => {
-        if (err) {
-            console.error('Error fetching posts:', err);
-            return res.status(500).json({ error: 'Failed to fetch posts' });
-        }
-        res.status(200).json(results);
-    });
+export const addLike = async (req, res) => {
+    try {
+        await Post.addLike(req.params.id);
+        res.status(200).json({ message: 'Like added' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 };
 
-// Like/Unlike Post: Toggle like status
-export const toggleLike = (req, res) => {
-    const { postId } = req.params;
-    const { user_id } = req.body;
-
-    checkLikeStatus(user_id, postId, (err, results) => {
-        if (err) {
-            console.error('Error checking like status:', err);
-            return res.status(500).json({ error: 'Failed to toggle like' });
-        }
-
-        if (results.length > 0) {
-            // Unlike the post
-            unlikePost(user_id, postId, (err) => {
-                if (err) {
-                    console.error('Error unliking post:', err);
-                    return res.status(500).json({ error: 'Failed to unlike post' });
-                }
-                res.status(200).json({ message: 'Post unliked successfully' });
-            });
-        } else {
-            // Like the post
-            likePost(user_id, postId, (err) => {
-                if (err) {
-                    console.error('Error liking post:', err);
-                    return res.status(500).json({ error: 'Failed to like post' });
-                }
-                res.status(200).json({ message: 'Post liked successfully' });
-            });
-        }
-    });
+export const removeLike = async (req, res) => {
+    try {
+        await Post.removeLike(req.params.id);
+        res.status(200).json({ message: 'Like removed' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 };
 
-// Add Comment: Add a comment to a post
-export const addPostComment = (req, res) => {
-    const { postId } = req.params;
-    const { user_id, comment } = req.body;
-
-    addComment(postId, user_id, comment, (err, result) => {
-        if (err) {
-            console.error('Error adding comment:', err);
-            return res.status(500).json({ error: 'Failed to add comment' });
-        }
-        res.status(201).json({ message: 'Comment added successfully', commentId: result.insertId });
-    });
+export const addComment = async (req, res) => {
+    try {
+        await Post.addComment(req.params.id, req.body);
+        res.status(201).json({ message: 'Comment added' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 };
 
-// Get User Posts: Retrieve posts by a specific user
-export const fetchUserPosts = (req, res) => {
-    const { userId } = req.params;
-
-    getUserPosts(userId, (err, results) => {
-        if (err) {
-            console.error('Error fetching user posts:', err);
-            return res.status(500).json({ error: 'Failed to fetch user posts' });
+// Controller: Adjusted to use postId and commentIndex
+export const removeComment = async (req, res) => {
+    try {
+        const { postId, commentIndex } = req.params;
+        if (!postId || commentIndex === undefined) {
+            return res.status(400).json({ message: 'postId and commentIndex are required' });
         }
-        res.status(200).json(results);
-    });
+        await Post.removeComment(postId, commentIndex);
+        res.status(200).json({ message: 'Comment removed' });
+    } catch (err) {
+        console.error('Error in removeComment controller:', err.message);
+        res.status(500).json({ message: 'Failed to remove comment. Please try again later.' });
+    }
 };

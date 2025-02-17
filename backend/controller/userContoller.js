@@ -21,7 +21,7 @@ export const registerUser = async (req, res) => {
 
       // Add the user
       User.addUser(username, email, hashedPassword, (err, result) => {
-        if (err) return res.status(500).json({ error: 'Registration failed' });
+        if (err) return res.status(500).json({ error: 'Registration failed',message:err.message });
         res.status(201).json({ message: 'User registered successfully' });
       });
     });
@@ -37,7 +37,7 @@ export const loginUser = (req, res) => {
 
  try {
   User.findUserByEmail(email, async (err, result) => {
-    if (err) return res.status(500).json({ error: 'Server Error' });
+    if (err) return res.status(500).json({ error: 'Server Error',message:err.message });
     if (result.length === 0) {
       return res.status(400).json({ error: 'Invalid Email or Password' });
     }
@@ -82,11 +82,7 @@ export const getUserData = async(req,res)=>{
       const user = result[0];
 
       res.status(200).json({
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-        },
+        user: result,
       });
     });
 
