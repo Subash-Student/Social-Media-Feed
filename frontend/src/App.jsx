@@ -1,6 +1,7 @@
 import React from 'react'
 import {  Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
+import { ToastContainer } from 'react-toastify';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import PrivateRoute from './utils/PrivateRoute';
@@ -8,6 +9,8 @@ import Profile from './pages/Profile';
 
 const App = () => {
   return (
+    <>
+    <ToastContainer />
     <Routes>
       <Route path='/' element={
       <PrivateRoute>
@@ -18,6 +21,7 @@ const App = () => {
       <Route path='/register' element={<Register />}/>
       <Route path='/profile' element={<Profile />} />
     </Routes>
+    </>
   )
 }
 

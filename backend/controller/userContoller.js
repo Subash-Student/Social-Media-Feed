@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../model/User.js";
 import CryptoJS from "crypto-js";
+import cloudinary from "../config/cloudinary.js";
+import streamifier from "streamifier"
 
 // User Registration
 export const registerUser = async (req, res) => {
@@ -92,6 +94,49 @@ export const getUserData = async(req,res)=>{
 
 
 
+// Controller (editProfile)
+export const editProfile = async(req, res) => {
+  const id = req.id; // Assuming the ID is passed via JWT or session
+  console.log(req.body);
+  const {  username, email } = req.body;
+  
+
+  User.findUserById(id, async (err, result) => {
+      if (err) return res.status(500).json({ error: 'Server Error' });
+      if (result.length === 0) {
+          return res.status(400).json({ error: 'Invalid id' });
+      }
+
+      const user = result[0];
+      
+      let { profilePic } = user;
+
+      // Handle image upload if a new file is provided
+      if (req.file) {  
+          try {
+              const imageUploadResult = await uploadImage(req.file);
+              if (!imageUploadResult?.success) {
+                  return res.status(500).json({ error: 'Image upload failed' });
+              }
+              profilePic = imageUploadResult.url;
+          } catch (error) {
+              return res.status(500).json({ error: 'Failed to upload image' });
+          }
+      }
+
+      try {
+          const updateResult = await User.editProfile(id, username, profilePic, email);
+          if (updateResult > 0) {
+              res.status(200).json({ message: 'Profile Updated' });
+          } else {
+              res.status(400).json({ error: 'No changes made to profile' });
+          }
+      } catch (error) {
+          console.error('Error editing profile:', error);
+          res.status(500).json({ error: 'Failed to edit profile' });
+      }
+  });
+};
 
 
 
@@ -99,6 +144,28 @@ export const getUserData = async(req,res)=>{
 
 
 
+async function uploadImage(file) {
+  return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: "image-files",
+          resource_type: "image",
+          public_id: file.originalname, // Optional: Set the public ID
+        },
+        (error, result) => {
+          if (error) {
+            console.error("image upload error:", error);
+            reject({ success: false });
+          } else {
+            resolve({ success: true, url: result.secure_url });
+          }
+        }
+      );
+  
+      // Convert the buffer to a readable stream and pipe it to Cloudinary
+      streamifier.createReadStream(file.buffer).pipe(stream);
+    });
+}
 
 
 

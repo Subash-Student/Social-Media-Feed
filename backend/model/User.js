@@ -57,8 +57,36 @@ const findUserById = (id, callback) => {
   db.query(query, [id], callback);
 };
 
+
+
+const editProfile = (id, username, profilePic, email) => {
+
+  console.log({id, username, profilePic, email})
+
+  return new Promise((resolve, reject) => {
+      const query = 'UPDATE users SET username = ?, email = ?, profilePic = ? WHERE id = ?';
+      db.query(query, [username, email, profilePic, id], (err, result) => {
+          if (err) {
+              console.error('Error executing query in editProfile:', err.message);
+              reject(new Error('Failed to edit profile. Please try again later.'));
+          } else {
+              resolve(result.affectedRows); // Use affectedRows to check if the update was successful
+          }
+      });
+  });
+};
+
+
+
+
+
+
+
+
+
 export default {
   addUser,
   findUserByEmail,
-  findUserById
+  findUserById,
+  editProfile
 };

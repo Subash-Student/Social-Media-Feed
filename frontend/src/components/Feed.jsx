@@ -9,40 +9,29 @@ import { StoreContext } from '../context/context';
 import axios from "axios"
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const postsData = [
-  {
-    id: 1,
-    userName: 'John Doe',
-    profilePic: 'https://i.pravatar.cc/150?img=1',
-    content: 'Beautiful day at the beach!',
-    postImage: 'https://source.unsplash.com/random/800x600',
-    likes: 3,
-    comments: [
-      { user: 'Jane', text: 'Looks amazing!' },
-      { user: 'Alice', text: 'Wish I was there!' }
-    ],
-    isLiked: false,
-    isOnline: true
-  },
-  {
-    id: 2,
-    userName: 'Jane Smith',
-    profilePic: 'https://i.pravatar.cc/150?img=2',
-    content: 'Just had the best pizza ever!',
-    postImage: '',
-    likes: 5,
-    comments: [],
-    isLiked: true,
-    isOnline: false
-  }
-];
+
 
 const Feed = () => {
-  // const [posts, setPosts] = useState(postsData);
-  const { posts, setPosts,userData } = useContext(StoreContext);  // Get both posts and setPosts from context
+  
+  const { posts = [], setPosts, userData, filterOption } = useContext(StoreContext);
   const [commentsText, setCommentsText] = useState({});
-  const [openKey,setOpenKey] = useState(0);
+  const [openKey, setOpenKey] = useState(0);
+ console.log(filterOption)
+  // Ensure posts is always an array
+  let filtered = Array.isArray(posts) ? [...posts] : [];
 
+  // Filter posts based on the filterOption
+  if (filterOption === "liked") {
+    filtered = filtered.filter((post) => post.likes > 0);
+  } else if (filterOption === "commented") {
+    filtered = filtered.filter((post) => post.comments && post.comments.length > 0);
+  } else if (filterOption === "images") {
+    filtered = filtered.filter((post) => post.postImage);
+  } else if (filterOption === "myPost") {
+    filtered = filtered.filter((post) => post.user_id == userData.id);
+  }
+
+  // Like functionality
   const handleLike = async (postId) => {
     try {
       const post = posts.find((p) => p.id === postId);
@@ -61,44 +50,12 @@ const Feed = () => {
       );
       setPosts(updatedPosts);
     } catch (error) {
-      console.error('Error updating like:', error);
-    } finally {
-      
+      console.error("Error updating like:", error);
     }
   };
 
-  // Handle adding a comment
-  // const handleComment = async (postId) => {
-  //   const text = commentsText[postId];
-  //   if (!text?.trim()) return;
-  
-  //   try {
-  //     const response = await axios.post(`http://localhost:5000/api/posts/${postId}/comments`, {
-  //       user: userData.username, // Replace with the logged-in user's name
-  //       text,
-  //     });
-  
-  //     if (response.status === 201) { // Assuming the comment is successfully created
-  //       const newComment = response.data;
-  //       // Update the local state immutably
-  //       setPosts((prevPosts) =>
-  //         prevPosts.map((post) =>
-  //           post.id === postId
-  //             ? { ...post, comments: [...post.comments, newComment] }
-  //             : post
-  //         )
-  //       );
-  //       // Clear the comment input for the post
-  //       setCommentsText({ ...commentsText, [postId]: '' });
-  //     } else {
-  //       console.error('Failed to add comment:', response);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error adding comment:', error);
-  //   }
-  // };
-  
-  const handleComment = async(postId)=>{
+  // Comment functionality
+  const handleComment = async (postId) => {
     const text = commentsText[postId];
     if (!text?.trim()) return;
 
@@ -108,33 +65,30 @@ const Feed = () => {
         text,
       });
 
-    if (response.status === 201) { 
-            const newComment = response.data.comment;
-            // Update the local state immutably
-            setPosts((prevPosts) =>
-              prevPosts.map((post) =>
-                post.id === postId
-                  ? { ...post, comments: [...post.comments,newComment ] }
-                  : post
-              )
-            );
-            // Clear the comment input for the post
-            setCommentsText({ ...commentsText, [postId]: '' });
-          } else {
-            console.error('Failed to add comment:', response);
-          }
-          console.log(posts);
+      if (response.status === 201) { 
+        const newComment = response.data.comment;
+        // Update the local state immutably
+        setPosts((prevPosts) =>
+          prevPosts.map((post) =>
+            post.id === postId
+              ? { ...post, comments: [...post.comments, newComment] }
+              : post
+          )
+        );
+        // Clear the comment input for the post
+        setCommentsText({ ...commentsText, [postId]: '' });
+      } else {
+        console.error("Failed to add comment:", response);
+      }
 
-      
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
+  };
 
-  }
-
-
-  const handleDeleteComment =async (postId, commentIndex) => {
-    const updatedPosts = posts.map(post => {
+  // Delete comment functionality
+  const handleDeleteComment = async (postId, commentIndex) => {
+    const updatedPosts = posts.map((post) => {
       if (post.id === postId) {
         const updatedComments = [...post.comments];
         updatedComments.splice(commentIndex, 1); // Remove the comment at the specified index
@@ -142,17 +96,18 @@ const Feed = () => {
       }
       return post;
     });
+
     try {
       const response = await axios.delete(`http://localhost:5000/api/posts/${postId}/comments/${commentIndex}`);
     } catch (error) {
-       console.log(error);
+      console.log(error);
     }
     setPosts(updatedPosts);
   };
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
-      {(posts || []).map(post => (
+      {(filtered || []).map(post => (
         <Card key={post.id} sx={{ marginBottom: '20px', borderRadius: '15px', boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)' }}>
           <CardHeader
             avatar={

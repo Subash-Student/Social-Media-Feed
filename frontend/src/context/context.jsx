@@ -13,6 +13,8 @@ const navigate = useNavigate();
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [userData, setUserData] = useState({});
   const [posts,setPosts] = useState();
+ const [filterOption,setFilterOption] = useState('all');
+
   const fetchUser = useCallback(async (token) => {
     try {
       const response = await axios.get("http://localhost:5000/api/users/profile", {
@@ -63,6 +65,7 @@ const navigate = useNavigate();
   const contextValue = {
     token,
     setToken,
+    filterOption,setFilterOption,
     userData,
     posts,
     setPosts,

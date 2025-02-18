@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import List from '@mui/material/List';
@@ -14,10 +14,12 @@ import Drawer from '@mui/material/Drawer';
 import Box from '@mui/material/Box';
 import { FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import AddPostModal from './AddPostModal';
+import { StoreContext } from '../context/context';
 
 const SideBar = ({ onAddPost, onOpenFilter }) => {
   const navigate = useNavigate();
-
+ 
+  const{filterOption,setFilterOption} = useContext(StoreContext);
   const [openModal, setOpenModal] = useState(false);
 
   const handleOpenModal = () => {
@@ -34,8 +36,14 @@ const SideBar = ({ onAddPost, onOpenFilter }) => {
   };
 
   const handleNavigation = (path) => {
+    if(path === "/profile"){setFilterOption("myPost")}
     navigate(path);
   };
+
+  const handleSortChange = (e)=>{
+      setFilterOption(e.target.value)
+      if(e.target.value === "myPost"){handleNavigation("/profile")}
+  }
 
   return (
     <Drawer
@@ -86,8 +94,8 @@ const SideBar = ({ onAddPost, onOpenFilter }) => {
           <ListItem disablePadding>
           <FormControl fullWidth>
   <Select
-      //   value={sortBy}  State for the selected option
-    //   onChange={handleSortChange}
+        value={filterOption} 
+      onChange={handleSortChange}
     displayEmpty
     renderValue={(selected) => {
       if (!selected) {
@@ -113,9 +121,11 @@ const SideBar = ({ onAddPost, onOpenFilter }) => {
       boxShadow: "none",
     }}
   >
+    <MenuItem value="all">all</MenuItem>
     <MenuItem value="liked">Most Liked</MenuItem>
     <MenuItem value="commented">Most Commented</MenuItem>
     <MenuItem value="images">Images Only</MenuItem>
+    <MenuItem value="myPost">myPost</MenuItem>
   </Select>
 </FormControl>
 
