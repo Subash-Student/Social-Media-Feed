@@ -20,32 +20,47 @@ const Feed = () => {
   // Ensure posts is always an array
   let filtered = Array.isArray(posts) ? [...posts] : [];
 
-  // Filter posts based on the filterOption
-  if (filterOption === "liked") {
-    filtered = filtered.filter((post) => post.likes > 0);
-  } else if (filterOption === "commented") {
-    filtered = filtered.filter((post) => post.comments && post.comments.length > 0);
-  } else if (filterOption === "images") {
-    filtered = filtered.filter((post) => post.postImage);
-  } else if (filterOption === "myPost") {
-    filtered = filtered.filter((post) => post.user_id == userData.id);
-  }
+  
+  // Filtering and Sorting Logic
+if (filterOption === "liked") {
+  filtered = filtered
+    .filter((post) => post.likes >= 0)
+    .sort((a, b) => b.likes - a.likes); // Sort by likes in descending order
+} else if (filterOption === "commented") {
+  filtered = filtered
+    .filter((post) => post.comments && post.comments.length >= 0)
+    .sort((a, b) => b.comments.length - a.comments.length); // Sort by number of comments in descending order
+} else if (filterOption === "images") {
+  filtered = filtered.filter((post) => post.postImage);
+} else if (filterOption === "myPost") {
+  filtered = filtered.filter((post) => post.user_id == userData.id);
+}
+
 
   // Like functionality
   const handleLike = async (postId) => {
     try {
       const post = posts.find((p) => p.id === postId);
-      
-      if (post.isLiked) {
-        await axios.delete(`http://localhost:5000/api/posts/${postId}/like`);
+      const isLiked = post.isLiked.some((id) => id == userData.id);
+  
+      if (isLiked) {
+        // Remove like
+        await axios.delete(`http://localhost:5000/api/posts/${postId}/like/${userData.id}`);
       } else {
-        await axios.post(`http://localhost:5000/api/posts/${postId}/like`);
+        // Add like
+        await axios.post(`http://localhost:5000/api/posts/${postId}/like/${userData.id}`);
       }
-
+  
       // Update the local state
       const updatedPosts = posts.map((p) =>
         p.id === postId
-          ? { ...p, likes: p.isLiked ? p.likes - 1 : p.likes + 1, isLiked: !p.isLiked }
+          ? {
+              ...p,
+              likes: isLiked ? p.likes - 1 : p.likes + 1,
+              isLiked: isLiked
+                ? p.isLiked.filter((id) => id !== userData.id) // Remove user_id from isLiked
+                : [...p.isLiked, userData.id], // Add user_id to isLiked
+            }
           : p
       );
       setPosts(updatedPosts);
@@ -53,6 +68,7 @@ const Feed = () => {
       console.error("Error updating like:", error);
     }
   };
+  
 
   // Comment functionality
   const handleComment = async (postId) => {
@@ -142,17 +158,17 @@ const Feed = () => {
           </CardContent>
           <CardActions disableSpacing>
             <IconButton onClick={() => handleLike(post.id)}>
-              {post.isLiked ? (
+              {post.isLiked.some(id => id==userData.id) ? (
                 <FavoriteIcon sx={{ color: 'red' }} />
               ) : (
                 <FavoriteBorderIcon />
               )}
             </IconButton>
             <Typography>{post.likes} Likes</Typography>
-            <IconButton>
+            <IconButton onClick={()=>setOpenKey(prev=>prev === post.id ?0:post.id)}>
               <ChatBubbleOutlineIcon />
             </IconButton >
-            <Typography style={{cursor:"pointer"}} onClick={()=>setOpenKey(prev=>prev === post.id ?0:post.id)}>{post.comments.length} Comments</Typography>
+            <Typography style={{cursor:"pointer"}} >{post.comments.length} Comments</Typography>
           </CardActions>
           {openKey === post.id && 
           <CardContent>

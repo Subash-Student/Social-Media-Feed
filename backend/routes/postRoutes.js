@@ -25,8 +25,8 @@ const postRouter = express.Router();
 postRouter.post('/add-post', multer().single("postImage"), createPost);
 postRouter.get('/posts', getAllPosts);
 postRouter.get('/posts/:id', getPostById);
-postRouter.post('/posts/:id/like', addLike);
-postRouter.delete('/posts/:id/like', removeLike);
+postRouter.post('/posts/:id/like/:user_id', addLike);
+postRouter.delete('/posts/:id/like/:user_id', removeLike);
 postRouter.post('/posts/:id/comments', addComment);
 postRouter.delete('/posts/:postId/comments/:commentIndex', removeComment);
 

@@ -2,7 +2,7 @@ import React, { useContext, useState } from 'react';
 import { Modal, Box, Typography, TextField, Button, IconButton, CircularProgress } from '@mui/material';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import CloseIcon from '@mui/icons-material/Close';
-import {toast} from "react-toastify"
+import { toast } from "react-toastify";
 import axios from 'axios';
 import { StoreContext } from '../context/context.jsx';
 
@@ -36,13 +36,14 @@ const imageInputStyle = {
   marginTop: '20px',
 };
 
-const AddPostModal = ({ open, onClose, onAddPost }) => {
+const AddPostModal = ({ open, onClose }) => {
   const [postContent, setPostContent] = useState('');
   const [postImage, setPostImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { userData } = useContext(StoreContext); 
+  const { userData, posts } = useContext(StoreContext); 
+
   const handlePost = async () => {
     if (!postContent.trim()) {
       setError('Post content cannot be empty.');
@@ -54,28 +55,28 @@ const AddPostModal = ({ open, onClose, onAddPost }) => {
 
     const formData = new FormData();
     formData.append('user_id', userData.id); 
-  
-    formData.append('content', postContent); // Add post content
+    formData.append('content', postContent); 
     if (postImage) {
-      formData.append('postImage', postImage); // Add post image file
+      formData.append('postImage', postImage); 
     }
+    formData.append("profilePic", userData.profilePic);
 
     try {
       const res = await axios.post('http://localhost:5000/api/add-post', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data', // Required for file uploads
+          'Content-Type': 'multipart/form-data',
         },
       });
 
       if (res.status === 201) {
-        toast.success(res.message)
+        toast.success("Post Added");
         setPostContent('');
         setPostImage(null);
-        onAddPost(res.data); // Notify parent component of the new post
-        onClose(); // Close the modal
+        onClose(); 
+        window.location.reload();
       }
     } catch (err) {
-      toast.error(err.message)
+      toast.error("Error, try again later");
       console.error('Error creating post:', err);
       setError('Failed to create post. Please try again.');
     } finally {
@@ -86,7 +87,7 @@ const AddPostModal = ({ open, onClose, onAddPost }) => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setPostImage(file); // Store the file for upload
+      setPostImage(file); 
     }
   };
 
@@ -115,7 +116,7 @@ const AddPostModal = ({ open, onClose, onAddPost }) => {
         <label htmlFor="image-upload" style={imageInputStyle}>
           {postImage ? (
             <img
-              src={URL.createObjectURL(postImage)} // Preview the selected image
+              src={URL.createObjectURL(postImage)}
               alt="Post Preview"
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }}
             />

@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS posts (
     postImage VARCHAR(255),
     likes INT DEFAULT 0,
     isLiked BOOLEAN DEFAULT FALSE,
-    isOnline BOOLEAN DEFAULT TRUE,
     comments JSON
 );
 `;
@@ -54,10 +53,12 @@ const getPostById = (id) => {
 
 // Add a new post with error handling
 const addPost = (user_id, content, postImage, userName, profilePic) => {
+    const isLiked = false;
+    const likes = 0;
     return new Promise((resolve, reject) => {
         const query = 'INSERT INTO posts (user_id, content, postImage, userName, profilePic, likes, isLiked, comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
         const comments = [];
-        db.query(query, [user_id, content, postImage, userName, profilePic, 0, false, JSON.stringify(comments)], (err, result) => {
+        db.query(query, [user_id, content, postImage, userName, profilePic, likes, isLiked, JSON.stringify(comments)], (err, result) => {
             if (err) {
                 console.error('Error executing query in addPost:', err.message);
                 reject(new Error('Failed to add post. Please try again later.'));
@@ -72,10 +73,15 @@ const addPost = (user_id, content, postImage, userName, profilePic) => {
 
 
 // Add a like to a post with error handling
-const addLike = (id) => {
+const addLike = (id, user_id) => {
     return new Promise((resolve, reject) => {
-        const query = 'UPDATE posts SET likes = likes + 1, isLiked = TRUE WHERE id = ?';
-        db.query(query, [id], (err, result) => {
+        const query = `
+            UPDATE posts
+            SET likes = IF(JSON_CONTAINS(isLiked, JSON_QUOTE(?)) = 0, likes + 1, likes),
+                isLiked = IF(JSON_CONTAINS(isLiked, JSON_QUOTE(?)) = 0, JSON_ARRAY_APPEND(isLiked, '$', ?), isLiked)
+            WHERE id = ?;
+        `;
+        db.query(query, [user_id, user_id, user_id, id], (err, result) => {
             if (err) {
                 console.error('Error executing query in addLike:', err.message);
                 return reject(new Error('Failed to like the post. Please try again later.'));
@@ -85,11 +91,17 @@ const addLike = (id) => {
     });
 };
 
+
 // Remove a like from a post with error handling
-const removeLike = (id) => {
+const removeLike = (id, user_id) => {
     return new Promise((resolve, reject) => {
-        const query = 'UPDATE posts SET likes = likes - 1, isLiked = FALSE WHERE id = ?';
-        db.query(query, [id], (err, result) => {
+        const query = `
+            UPDATE posts
+            SET likes = IF(JSON_CONTAINS(isLiked, JSON_QUOTE(?)) = 1, likes - 1, likes),
+                isLiked = IF(JSON_CONTAINS(isLiked, JSON_QUOTE(?)) = 1, JSON_REMOVE(isLiked, JSON_UNQUOTE(JSON_SEARCH(isLiked, 'one', ?))), isLiked)
+            WHERE id = ?;
+        `;
+        db.query(query, [user_id, user_id, user_id, id], (err, result) => {
             if (err) {
                 console.error('Error executing query in removeLike:', err.message);
                 return reject(new Error('Failed to unlike the post. Please try again later.'));
@@ -98,6 +110,7 @@ const removeLike = (id) => {
         });
     });
 };
+
 
 // Add a comment to a post with error handling
 const addComment = (postId, user, text) => {

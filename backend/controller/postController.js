@@ -46,7 +46,7 @@ export const createPost = async(req, res) => {
         
 
         try {
-            const postId = await Post.addPost(user_id, content, postImage, user.username, user.profilepic);
+            const postId = await Post.addPost(user_id, content, postImage, user.username, user.profilePic);
             res.status(201).json({ message: 'Post created successfully', postId });
         } catch (error) {
             console.error('Error creating post:', error);
@@ -59,7 +59,7 @@ export const createPost = async(req, res) => {
 
 export const addLike = async (req, res) => {
     try {
-        await Post.addLike(req.params.id);
+        await Post.addLike(req.params.id,req.params.user_id);
         res.status(200).json({ message: 'Like added' });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -68,7 +68,7 @@ export const addLike = async (req, res) => {
 
 export const removeLike = async (req, res) => {
     try {
-        await Post.removeLike(req.params.id);
+        await Post.removeLike(req.params.id,req.params.user_id);
         res.status(200).json({ message: 'Like removed' });
     } catch (err) {
         res.status(500).json({ message: err.message });
