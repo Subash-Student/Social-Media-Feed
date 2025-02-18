@@ -17,7 +17,7 @@ const Home = () => {
     <>
       <NavBar />
       <SideBar onAddPost={handleAddPost} onOpenFilter={handleOpenFilter} />
-      <div style={{ marginLeft: '240px', padding: '20px' ,marginTop:"50px"}}>
+      <div style={{ marginLeft: { xs: '0', sm: '2400px' }, padding: { xs: '0', sm: '20px' },marginTop:"50px"}}>
         
         <Feed />
             

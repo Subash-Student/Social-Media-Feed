@@ -17,11 +17,14 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import { toast } from 'react-toastify';
 import CloseIcon from '@mui/icons-material/Close';
+import { useMediaQuery ,useTheme} from '@mui/material';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { StoreContext } from '../context/context';
 import axios from 'axios';
 
 const UserProfileBox = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { userData, token } = useContext(StoreContext);
   const [isEditMode, setIsEditMode] = useState(false);
   const [openModal, setOpenModal] = useState(false);
@@ -165,78 +168,78 @@ const UserProfileBox = () => {
 
       {/* Edit Profile Modal */}
       <Dialog open={openModal} onClose={handleCloseModal} sx={{ borderRadius: '12px' }}>
-        <DialogTitle>Edit Profile</DialogTitle>
-        <DialogContent
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: '400px',
-            padding: 4,
-            backgroundColor: '#f9f9f9',
-            borderRadius: '10px',
-          }}
-        >
-          {/* Profile Picture Input */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 2 }}>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              id="profile-picture-input"
-              style={{ display: 'none' }}
-            />
-            <label htmlFor="profile-picture-input">
-              <Avatar
-                alt="New Profile Picture"
-                src={editedUser.profilePic || '/default-avatar.png'}
-                sx={{
-                  width: 100,
-                  height: 100,
-                  borderRadius: '50%',
-                  cursor: 'pointer',
-                  border: '3px solid #00796b',
-                  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                  marginBottom: 2,
-                }}
-              >
-                <CameraAltIcon sx={{ color: '#00796b', fontSize: 32, position: 'absolute', bottom: -5, right: -5 }} />
-              </Avatar>
-            </label>
-          </Box>
-
-          {/* Username Input */}
-          <TextField
-            label="Username"
-            name="username" // Changed from 'name' to 'username'
-            value={editedUser.username}
-            onChange={handleInputChange}
-            fullWidth
-            variant="outlined"
-            sx={{ marginBottom: 2 }}
+      <DialogTitle>Edit Profile</DialogTitle>
+      <DialogContent
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: isMobile ? '90%' : '400px', // 90% width for mobile, 400px for larger screens
+          padding: isMobile ? 2 : 4, // Adjust padding for mobile
+          backgroundColor: '#f9f9f9',
+          borderRadius: '10px',
+        }}
+      >
+        {/* Profile Picture Input */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 2 }}>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            id="profile-picture-input"
+            style={{ display: 'none' }}
           />
+          <label htmlFor="profile-picture-input">
+            <Avatar
+              alt="New Profile Picture"
+              src={editedUser.profilePic || '/default-avatar.png'}
+              sx={{
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                cursor: 'pointer',
+                border: '3px solid #00796b',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                marginBottom: 2,
+              }}
+            >
+              <CameraAltIcon sx={{ color: '#00796b', fontSize: 32, position: 'absolute', bottom: -5, right: -5 }} />
+            </Avatar>
+          </label>
+        </Box>
 
-          {/* Email Input */}
-          <TextField
-            label="Email"
-            name="email"
-            value={editedUser.email}
-            onChange={handleInputChange}
-            fullWidth
-            variant="outlined"
-            sx={{ marginBottom: 2 }}
-          />
-        </DialogContent>
-        
-        <DialogActions>
-          <Button onClick={handleCloseModal} sx={{ color: '#00796b' }}>
-            Cancel
-          </Button>
-          <Button onClick={handleSaveChanges} sx={{ color: '#00796b' }}>
+        {/* Username Input */}
+        <TextField
+          label="Username"
+          name="username" // Changed from 'name' to 'username'
+          value={editedUser.username}
+          onChange={handleInputChange}
+          fullWidth
+          variant="outlined"
+          sx={{ marginBottom: 2 }}
+        />
+
+        {/* Email Input */}
+        <TextField
+          label="Email"
+          name="email"
+          value={editedUser.email}
+          onChange={handleInputChange}
+          fullWidth
+          variant="outlined"
+          sx={{ marginBottom: 2 }}
+        />
+      </DialogContent>
+      
+      <DialogActions>
+        <Button onClick={handleCloseModal} sx={{ color: '#00796b' }}>
+          Cancel
+        </Button>
+        <Button onClick={handleSaveChanges} sx={{ color: '#00796b' }}>
           {loading ? <CircularProgress size={24} /> : 'Save'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Button>
+      </DialogActions>
+    </Dialog>
     </Card>
   );
 };
