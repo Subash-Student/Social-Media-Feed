@@ -9,41 +9,41 @@ export const registerUser = async (req, res) => {
 
   try {
     // Check if the user already exists
-    User.findUserByEmail(email, async (err, result) => {
-      if (err) return res.status(500).json({ error: 'Server Error' });
-      if (result.length > 0) {
-        return res.status(400).json({ error: 'Email already registered' });
-      }
+    const existingUser = await User.findUserByEmail(email);
 
-      // Hash the password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
 
-      // Add the user
-      User.addUser(username, email, hashedPassword, (err, result) => {
-        if (err) return res.status(500).json({ error: 'Registration failed',message:err.message });
-        res.status(201).json({ message: 'User registered successfully' });
-      });
-    });
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Add the user
+    await User.addUser(username, email, hashedPassword);
+    
+    res.status(201).json({ message: 'User registered successfully' });
+    
   } catch (error) {
-    console.log(error)
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error('❌ Error in registerUser:', error.message);
+    return res.status(500).json({ error: 'Internal Server Error', message: error.message });
   }
 };
 
+
 // User Login
-export const loginUser = (req, res) => {
+export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
- try {
-  User.findUserByEmail(email, async (err, result) => {
-    if (err) return res.status(500).json({ error: 'Server Error',message:err.message });
-    if (result.length === 0) {
+  try {
+    // Await the result of the Promise
+    const user = await User.findUserByEmail(email);
+
+    if (!user) { // Check if no user is found
       return res.status(400).json({ error: 'Invalid Email or Password' });
     }
 
     // Compare password
-    const user = result[0];
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ error: 'Invalid Email or Password' });
@@ -58,14 +58,12 @@ export const loginUser = (req, res) => {
       message: 'Login successful',
       token
     });
-  });
- } catch (error) {
-   console.log(error)
-   return res.status(500).json({ error: 'Internal Server Error' });
-
- }
- 
+  } catch (error) {
+    console.log('❌ Error in loginUser:', error);
+    return res.status(500).json({ error: 'Internal Server Error', message: error.message });
+  }
 };
+
 
 
 export const getUserData = async(req,res)=>{

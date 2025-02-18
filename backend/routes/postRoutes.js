@@ -13,16 +13,16 @@ import {
 
 const postRouter = express.Router();
 
-const storage = multer.diskStorage({
-    destination:"uploads",
-    filename :(req,file,cb)=>{
-       return cb(null,`${Date.now()} ${file.originalname}`)
-    }
-})
+// const storage = multer.diskStorage({
+//     destination:"uploads",
+//     filename :(req,file,cb)=>{
+//        return cb(null,`${Date.now()} ${file.originalname}`)
+//     }
+// })
 
-const upload = multer({storage:storage}); 
+// const upload = multer({storage:storage}); 
 
-postRouter.post('/add-post', upload.single('postImage'), createPost);
+postRouter.post('/add-post', multer().single("postImage"), createPost);
 postRouter.get('/posts', getAllPosts);
 postRouter.get('/posts/:id', getPostById);
 postRouter.post('/posts/:id/like', addLike);

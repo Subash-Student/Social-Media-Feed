@@ -56,16 +56,20 @@ const getPostById = (id) => {
 const addPost = (user_id, content, postImage, userName, profilePic) => {
     return new Promise((resolve, reject) => {
         const query = 'INSERT INTO posts (user_id, content, postImage, userName, profilePic, likes, isLiked, comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-        const comments = []; 
+        const comments = [];
         db.query(query, [user_id, content, postImage, userName, profilePic, 0, false, JSON.stringify(comments)], (err, result) => {
             if (err) {
                 console.error('Error executing query in addPost:', err.message);
-                return reject(new Error('Failed to add post. Please try again later.'));
+                reject(new Error('Failed to add post. Please try again later.'));
+            } else {
+                resolve(result.insertId);
             }
-            resolve(result.insertId);
         });
     });
 };
+
+
+
 
 // Add a like to a post with error handling
 const addLike = (id) => {

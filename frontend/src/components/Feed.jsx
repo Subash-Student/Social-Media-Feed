@@ -39,9 +39,9 @@ const postsData = [
 
 const Feed = () => {
   // const [posts, setPosts] = useState(postsData);
-  const { posts, setPosts } = useContext(StoreContext);  // Get both posts and setPosts from context
+  const { posts, setPosts,userData } = useContext(StoreContext);  // Get both posts and setPosts from context
   const [commentsText, setCommentsText] = useState({});
-  const [isOpen,setIsopen] = useState(false);
+  const [openKey,setOpenKey] = useState(0);
 
   const handleLike = async (postId) => {
     try {
@@ -68,31 +68,71 @@ const Feed = () => {
   };
 
   // Handle adding a comment
-  const handleComment = async (postId) => {
+  // const handleComment = async (postId) => {
+  //   const text = commentsText[postId];
+  //   if (!text?.trim()) return;
+  
+  //   try {
+  //     const response = await axios.post(`http://localhost:5000/api/posts/${postId}/comments`, {
+  //       user: userData.username, // Replace with the logged-in user's name
+  //       text,
+  //     });
+  
+  //     if (response.status === 201) { // Assuming the comment is successfully created
+  //       const newComment = response.data;
+  //       // Update the local state immutably
+  //       setPosts((prevPosts) =>
+  //         prevPosts.map((post) =>
+  //           post.id === postId
+  //             ? { ...post, comments: [...post.comments, newComment] }
+  //             : post
+  //         )
+  //       );
+  //       // Clear the comment input for the post
+  //       setCommentsText({ ...commentsText, [postId]: '' });
+  //     } else {
+  //       console.error('Failed to add comment:', response);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error adding comment:', error);
+  //   }
+  // };
+  
+  const handleComment = async(postId)=>{
     const text = commentsText[postId];
     if (!text?.trim()) return;
 
     try {
-      
       const response = await axios.post(`http://localhost:5000/api/posts/${postId}/comments`, {
-        user: 'You', // Replace with the logged-in user's name
+        user: userData.username, 
         text,
       });
 
-      // Update the local state
-      const updatedPosts = posts.map((p) =>
-        p.id === postId
-          ? { ...p, comments: [...p.comments, response.data] }
-          : p
-      );
-      setPosts(updatedPosts);
-      setCommentsText({ ...commentsText, [postId]: '' }); // Clear the comment input for the post
-    } catch (error) {
-      console.error('Error adding comment:', error);
-    } finally {
+    if (response.status === 201) { 
+            const newComment = response.data.comment;
+            // Update the local state immutably
+            setPosts((prevPosts) =>
+              prevPosts.map((post) =>
+                post.id === postId
+                  ? { ...post, comments: [...post.comments,newComment ] }
+                  : post
+              )
+            );
+            // Clear the comment input for the post
+            setCommentsText({ ...commentsText, [postId]: '' });
+          } else {
+            console.error('Failed to add comment:', response);
+          }
+          console.log(posts);
+
       
+    } catch (error) {
+      console.log(error)
     }
-  };
+
+  }
+
+
   const handleDeleteComment =async (postId, commentIndex) => {
     const updatedPosts = posts.map(post => {
       if (post.id === postId) {
@@ -157,9 +197,9 @@ const Feed = () => {
             <IconButton>
               <ChatBubbleOutlineIcon />
             </IconButton >
-            <Typography style={{cursor:"pointer"}} onClick={()=>setIsopen(prev=>!prev)}>{post.comments.length} Comments</Typography>
+            <Typography style={{cursor:"pointer"}} onClick={()=>setOpenKey(prev=>prev === post.id ?0:post.id)}>{post.comments.length} Comments</Typography>
           </CardActions>
-          {isOpen && 
+          {openKey === post.id && 
           <CardContent>
           {/* Comments Section */}
           <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '8px', padding: '10px' }}>
@@ -168,15 +208,15 @@ const Feed = () => {
               const parsedComment = JSON.parse(comment);
               
               // Access the user and text properties
-              const user = parsedComment.user.user; // Accessing the user name
-              const text = parsedComment.user.text; // Accessing the comment text
+              const user = parsedComment.user; // Accessing the user name
+              const text = parsedComment.text; // Accessing the comment text
 
               return (
                 <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
                   <Typography variant="body2">
                     <strong>{user}:</strong> {text}
                   </Typography>
-                  {user === "You" &&
+                  {user === userData.username &&
                   <IconButton onClick={() => handleDeleteComment(post.id, index)} size="small">
                     <DeleteIcon fontSize="small" />
                   </IconButton>

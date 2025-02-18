@@ -52,17 +52,9 @@ const findUserByEmail = (email) => {
 };
 
 // Find a user by ID
-const findUserById = (id) => {
-  return new Promise((resolve, reject) => {
-    const query = 'SELECT * FROM users WHERE id = ?';
-    db.query(query, [id], (err, result) => {
-      if (err) {
-        console.error('❌ Error in findUserById:', err.message);
-        return reject(new Error('Failed to find user by ID. Please try again.'));
-      }
-      resolve(result[0]); // Return the first matching user
-    });
-  });
+const findUserById = (id, callback) => {
+  const query = 'SELECT * FROM users WHERE id = ?';
+  db.query(query, [id], callback);
 };
 
 export default {

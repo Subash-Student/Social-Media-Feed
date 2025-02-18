@@ -1,5 +1,7 @@
 import Post from "../model/Post.js"
 import User from "../model/User.js";
+import cloudinary from "../config/cloudinary.js";
+import streamifier from "streamifier"
 
 export const getAllPosts = async (req, res) => {
     try {
@@ -20,36 +22,39 @@ export const getPostById = async (req, res) => {
     }
 };
 
-// export const addPost = async (req, res) => {
-//     try {
-//         const postId = await Post.addPost(req.body);
-//         res.status(201).json({ id: postId, ...req.body });
-//     } catch (err) {
-//         res.status(500).json({ message: err.message });
-//     }
-// };
 
-export const createPost = (req, res) => {
+
+export const createPost = async(req, res) => {
     const { user_id, content } = req.body;
-    const postImage = req.file ? req.file.path : null; // Get the uploaded image path
+    let postImage = "";
+   
+    if(req.file){  
+              const result = await uploadImage(req.file);
+              if (!result?.success) {
+                throw new Error(`${type} upload failed`);
+            }
+            postImage =  result.url;
+    }
 
     User.findUserById(user_id, async (err, result) => {
         if (err) return res.status(500).json({ error: 'Server Error' });
         if (result.length === 0) {
-          return res.status(400).json({ error: 'Invalid id' });
+            return res.status(400).json({ error: 'Invalid id' });
         }
-    
-        const user = result[0];
 
-        Post.addPost(user_id, content, postImage,user.username,user.profilepic, (err, result) => {
-            if (err) {
-                console.error('Error creating post:', err);
-                return res.status(500).json({ error: 'Failed to create post' });
-            }
-            res.status(201).json({ message: 'Post created successfully', postId: result.insertId });
-        });
- } )
+        const user = result[0];
+        
+
+        try {
+            const postId = await Post.addPost(user_id, content, postImage, user.username, user.profilepic);
+            res.status(201).json({ message: 'Post created successfully', postId });
+        } catch (error) {
+            console.error('Error creating post:', error);
+            res.status(500).json({ error: 'Failed to create post' });
+        }
+    });
 };
+
 
 
 export const addLike = async (req, res) => {
@@ -71,9 +76,10 @@ export const removeLike = async (req, res) => {
 };
 
 export const addComment = async (req, res) => {
+    const{user,text} = req.body;
     try {
-        await Post.addComment(req.params.id, req.body);
-        res.status(201).json({ message: 'Comment added' });
+        await Post.addComment(req.params.id, user,text);
+        res.status(201).json({ message: 'Comment added',comment:JSON.stringify({user,text}) });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -93,3 +99,27 @@ export const removeComment = async (req, res) => {
         res.status(500).json({ message: 'Failed to remove comment. Please try again later.' });
     }
 };
+
+
+async function uploadImage(file) {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "image-files",
+            resource_type: "image",
+            public_id: file.originalname, // Optional: Set the public ID
+          },
+          (error, result) => {
+            if (error) {
+              console.error("image upload error:", error);
+              reject({ success: false });
+            } else {
+              resolve({ success: true, url: result.secure_url });
+            }
+          }
+        );
+    
+        // Convert the buffer to a readable stream and pipe it to Cloudinary
+        streamifier.createReadStream(file.buffer).pipe(stream);
+      });
+  }
