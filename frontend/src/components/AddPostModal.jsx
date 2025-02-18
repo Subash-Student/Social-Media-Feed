@@ -73,7 +73,9 @@ const AddPostModal = ({ open, onClose }) => {
         setPostContent('');
         setPostImage(null);
         onClose(); 
-        window.location.reload();
+        setTimeout(()=>{
+          window.location.reload();
+        },500)
       }
     } catch (err) {
       toast.error("Error, try again later");

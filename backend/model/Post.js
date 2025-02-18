@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS posts (
     content TEXT NOT NULL,
     postImage VARCHAR(255),
     likes INT DEFAULT 0,
-    isLiked BOOLEAN DEFAULT FALSE,
+    isLiked JSON,
     comments JSON
 );
 `;
@@ -53,12 +53,12 @@ const getPostById = (id) => {
 
 // Add a new post with error handling
 const addPost = (user_id, content, postImage, userName, profilePic) => {
-    const isLiked = false;
+    const isLiked = [];
     const likes = 0;
     return new Promise((resolve, reject) => {
         const query = 'INSERT INTO posts (user_id, content, postImage, userName, profilePic, likes, isLiked, comments) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
         const comments = [];
-        db.query(query, [user_id, content, postImage, userName, profilePic, likes, isLiked, JSON.stringify(comments)], (err, result) => {
+        db.query(query, [user_id, content, postImage, userName, profilePic, likes, JSON.stringify(isLiked), JSON.stringify(comments)], (err, result) => {
             if (err) {
                 console.error('Error executing query in addPost:', err.message);
                 reject(new Error('Failed to add post. Please try again later.'));
@@ -68,6 +68,7 @@ const addPost = (user_id, content, postImage, userName, profilePic) => {
         });
     });
 };
+
 
 
 

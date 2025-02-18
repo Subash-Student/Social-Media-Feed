@@ -52,16 +52,25 @@ const Register = () => {
           textAlign: 'center',
         }}
       >
+        <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold', display: 'flex',fontSize:"40px", alignItems: 'center' }}>
+          <img 
+            src="logo.jpeg" 
+            alt="logo" 
+            style={{ marginRight: 8, borderRadius: '50%', width: '100px' }}
+          />
+          InstaClone
+        </Typography>
         <Typography
           variant="h4"
           gutterBottom
           sx={{
             fontWeight: 'bold',
+            fontSize:"20px",
             color: '#1976d2',
             fontFamily: 'Poppins, sans-serif',
           }}
         >
-          Register
+          Login
         </Typography>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
