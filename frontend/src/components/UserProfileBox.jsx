@@ -123,7 +123,7 @@ const UserProfileBox = () => {
     }
     return new File([u8arr], filename, { type: mime });
   };
-
+console.log(editedUser)
   return (
     <Card
       sx={{

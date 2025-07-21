@@ -1,23 +1,19 @@
-import mysql from "mysql2";
+import mongoose from "mongoose";
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config()
 
 
+// CONNECT THE MONGODB
 
-const connection = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-  });
-
-
-  connection.connect((err)=>{
-    if(err){
-        console.log("Failed to connect database",err.message);
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGO_URI);
+        console.log("DB connected");
+    } catch (e) {
+        console.error(e.message);
+        throw e;
     }
+}
 
-    console.log("DB connected")
-  });
 
-  export default connection;
+export default connectDB;

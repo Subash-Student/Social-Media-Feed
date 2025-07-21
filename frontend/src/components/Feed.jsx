@@ -33,33 +33,33 @@ if (filterOption === "liked") {
 } else if (filterOption === "images") {
   filtered = filtered.filter((post) => post.postImage);
 } else if (filterOption === "myPost") {
-  filtered = filtered.filter((post) => post.user_id == userData.id);
+  filtered = filtered.filter((post) => post.user_id == userData._id);
 }
 
 
   // Like functionality
   const handleLike = async (postId) => {
     try {
-      const post = posts.find((p) => p.id === postId);
-      const isLiked = post.isLiked.some((id) => id == userData.id);
+      const post = posts.find((p) => p._id === postId);
+      const isLiked = post.isLiked.some((id) => id == userData._id);
   
       if (isLiked) {
         // Remove like
-        await axios.delete(`http://localhost:5000/api/posts/${postId}/like/${userData.id}`);
+        await axios.delete(`http://localhost:5000/api/posts/${postId}/like/${userData._id}`);
       } else {
         // Add like
-        await axios.post(`http://localhost:5000/api/posts/${postId}/like/${userData.id}`);
+        await axios.post(`http://localhost:5000/api/posts/${postId}/like/${userData._id}`);
       }
   
       // Update the local state
       const updatedPosts = posts.map((p) =>
-        p.id === postId
+        p._id === postId
           ? {
               ...p,
               likes: isLiked ? p.likes - 1 : p.likes + 1,
               isLiked: isLiked
-                ? p.isLiked.filter((id) => id !== userData.id) // Remove user_id from isLiked
-                : [...p.isLiked, userData.id], // Add user_id to isLiked
+                ? p.isLiked.filter((id) => id !== userData._id) // Remove user_id from isLiked
+                : [...p.isLiked, userData._id], // Add user_id to isLiked
             }
           : p
       );
@@ -86,7 +86,7 @@ if (filterOption === "liked") {
         // Update the local state immutably
         setPosts((prevPosts) =>
           prevPosts.map((post) =>
-            post.id === postId
+            post._id === postId
               ? { ...post, comments: [...post.comments, newComment] }
               : post
           )
@@ -105,7 +105,7 @@ if (filterOption === "liked") {
   // Delete comment functionality
   const handleDeleteComment = async (postId, commentIndex) => {
     const updatedPosts = posts.map((post) => {
-      if (post.id === postId) {
+      if (post._id === postId) {
         const updatedComments = [...post.comments];
         updatedComments.splice(commentIndex, 1); // Remove the comment at the specified index
         return { ...post, comments: updatedComments };
@@ -124,7 +124,7 @@ if (filterOption === "liked") {
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
       {(filtered || []).map(post => (
-        <Card key={post.id} sx={{ marginBottom: '20px', borderRadius: '15px', boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)' }}>
+        <Card key={post._id} sx={{ marginBottom: '20px', borderRadius: '15px', boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)' }}>
           <CardHeader
             avatar={
               // <Badge
@@ -146,37 +146,38 @@ if (filterOption === "liked") {
           />
           {post.postImage && (
             <CardMedia
+
               component="img"
               height="300"
               image={post.postImage}
               alt="Post Image"
-              sx={{ borderRadius: '10px' }}
+              sx={{ borderRadius: '10px',objectFit:"contain" }}
             />
           )}
           <CardContent>
             <Typography variant="body1">{post.content}</Typography>
           </CardContent>
           <CardActions disableSpacing>
-            <IconButton onClick={() => handleLike(post.id)}>
-              {post.isLiked.some(id => id==userData.id) ? (
+            <IconButton onClick={() => handleLike(post._id)}>
+              {post.isLiked.some(id => id==userData._id) ? (
                 <FavoriteIcon sx={{ color: 'red' }} />
               ) : (
                 <FavoriteBorderIcon />
               )}
             </IconButton>
             <Typography>{post.likes} Likes</Typography>
-            <IconButton onClick={()=>setOpenKey(prev=>prev === post.id ?0:post.id)}>
+            <IconButton onClick={()=>setOpenKey(prev=>prev === post._id ?0:post._id)}>
               <ChatBubbleOutlineIcon />
             </IconButton >
             <Typography style={{cursor:"pointer"}} >{post.comments.length} Comments</Typography>
           </CardActions>
-          {openKey === post.id && 
+          {openKey === post._id && 
           <CardContent>
           {/* Comments Section */}
           <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #ddd', borderRadius: '8px', padding: '10px' }}>
             {post.comments.map((comment, index) => {
               // Parse the JSON string to an object
-              const parsedComment = JSON.parse(comment);
+              const parsedComment = comment
               
               // Access the user and text properties
               const user = parsedComment.user; // Accessing the user name
@@ -188,7 +189,7 @@ if (filterOption === "liked") {
                     <strong>{user}:</strong> {text}
                   </Typography>
                   {user === userData.username &&
-                  <IconButton onClick={() => handleDeleteComment(post.id, index)} size="small">
+                  <IconButton onClick={() => handleDeleteComment(post._id, index)} size="small">
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                   }
@@ -204,10 +205,10 @@ if (filterOption === "liked") {
               placeholder="Add a comment..."
               size="small"
               fullWidth
-              value={commentsText[post.id] || ''}
-              onChange={(e) => setCommentsText({ ...commentsText, [post.id]: e.target.value })}
+              value={commentsText[post._id] || ''}
+              onChange={(e) => setCommentsText({ ...commentsText, [post._id]: e.target.value })}
             />
-            <IconButton onClick={() => handleComment(post.id)}>
+            <IconButton onClick={() => handleComment(post._id)}>
               <SendIcon />
             </IconButton>
           </div>

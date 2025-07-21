@@ -1,143 +1,149 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import User from "../model/User.js";
 import CryptoJS from "crypto-js";
 import cloudinary from "../config/cloudinary.js";
 import streamifier from "streamifier"
+import User from "../model/User.js";
 
-// User Registration
+
 export const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
 
   try {
-    // Check if the user already exists
-    const existingUser = await User.findUserByEmail(email);
+    // ✅ Check if the user already exists
+    const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      return res.status(400).json({ error: 'Email already registered' });
+      return res.status(400).json({ error: "Email already registered" });
     }
 
-    // Hash the password
+    // ✅ Hash the password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Add the user
-    await User.addUser(username, email, hashedPassword);
-    
-    res.status(201).json({ message: 'User registered successfully' });
-    
+    // ✅ Create and save the user
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword
+    });
+
+    await newUser.save();
+
+    res.status(201).json({ message: "User registered successfully" });
+
   } catch (error) {
-    console.error('❌ Error in registerUser:', error.message);
-    return res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    console.error("❌ Error in registerUser:", error.message);
+    res.status(500).json({ error: "Internal Server Error", message: error.message });
   }
 };
 
 
-// User Login
+
+
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Await the result of the Promise
-    const user = await User.findUserByEmail(email);
+    // ✅ Find user by email using Mongoose
+    const user = await User.findOne({ email });
 
-    if (!user) { // Check if no user is found
-      return res.status(400).json({ error: 'Invalid Email or Password' });
+    if (!user) {
+      return res.status(400).json({ error: "Invalid Email or Password" });
     }
 
-    // Compare password
+    // ✅ Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ error: 'Invalid Email or Password' });
+      return res.status(400).json({ error: "Invalid Email or Password" });
     }
 
-    // Create JWT Token
-    const jwtToken = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET);
-    
-    const token = setEncryptedToken(jwtToken);
+    // ✅ Create JWT Token
+    const jwtToken = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" } // Optional: token expiry
+    );
+
+    const token = setEncryptedToken(jwtToken); // optional wrapper
 
     res.status(200).json({
-      message: 'Login successful',
-      token
+      message: "Login successful",
+      token,
     });
+
   } catch (error) {
-    console.log('❌ Error in loginUser:', error);
-    return res.status(500).json({ error: 'Internal Server Error', message: error.message });
+    console.error("❌ Error in loginUser:", error.message);
+    res.status(500).json({ error: "Internal Server Error", message: error.message });
   }
 };
 
 
-
-export const getUserData = async(req,res)=>{
- 
-  const id = req.id;
+export const getUserData = async (req, res) => {
+  const id = req.id; // assuming this comes from a verified JWT middleware
 
   try {
-    User.findUserById(id, async (err, result) => {
-      if (err) return res.status(500).json({ error: 'Server Error' });
-      if (result.length === 0) {
-        return res.status(400).json({ error: 'Invalid id' });
-      }
-  
-      const user = result[0];
+    // ✅ Fetch user by MongoDB _id
+    const user = await User.findById(id).select("-password"); // exclude password from result
 
-      res.status(200).json({
-        user: result,
-      });
-    });
+    if (!user) {
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
+
+    res.status(200).json({ user });
 
   } catch (error) {
-    console.log(error)
-   return res.status(500).json({ error: 'Internal Server Error' });
+    console.error("❌ Error in getUserData:", error.message);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
-}
-
-
-
-// Controller (editProfile)
-export const editProfile = async(req, res) => {
-  const id = req.id; // Assuming the ID is passed via JWT or session
-  console.log(req.body);
-  const {  username, email } = req.body;
-  
-
-  User.findUserById(id, async (err, result) => {
-      if (err) return res.status(500).json({ error: 'Server Error' });
-      if (result.length === 0) {
-          return res.status(400).json({ error: 'Invalid id' });
-      }
-
-      const user = result[0];
-      
-      let { profilePic } = user;
-
-      // Handle image upload if a new file is provided
-      if (req.file) {  
-          try {
-              const imageUploadResult = await uploadImage(req.file);
-              if (!imageUploadResult?.success) {
-                  return res.status(500).json({ error: 'Image upload failed' });
-              }
-              profilePic = imageUploadResult.url;
-          } catch (error) {
-              return res.status(500).json({ error: 'Failed to upload image' });
-          }
-      }
-
-      try {
-          const updateResult = await User.editProfile(id, username, profilePic, email);
-          if (updateResult > 0) {
-              res.status(200).json({ message: 'Profile Updated' });
-          } else {
-              res.status(400).json({ error: 'No changes made to profile' });
-          }
-      } catch (error) {
-          console.error('Error editing profile:', error);
-          res.status(500).json({ error: 'Failed to edit profile' });
-      }
-  });
 };
 
+
+export const editProfile = async (req, res) => {
+  const id = req.id; // Assuming extracted from JWT middleware
+  const { username, email } = req.body;
+
+  try {
+    // ✅ Check if user exists
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(400).json({ error: "Invalid user ID" });
+    }
+
+    let profilePic = user.profilePic;
+
+    // ✅ If file is uploaded, handle it
+    if (req.file) {
+      try {
+        const uploadResult = await uploadImage(req.file);
+        if (!uploadResult?.success) {
+          return res.status(500).json({ error: "Image upload failed" });
+        }
+        profilePic = uploadResult.url;
+      } catch (err) {
+        console.error("❌ Image upload error:", err.message);
+        return res.status(500).json({ error: "Failed to upload image" });
+      }
+    }
+
+    // ✅ Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { username, email, profilePic },
+      { new: true } // return the updated user
+    );
+
+    if (!updatedUser) {
+      return res.status(400).json({ error: "No changes made to profile" });
+    }
+
+    res.status(200).json({ message: "Profile updated", user: updatedUser });
+
+  } catch (error) {
+    console.error("❌ Error editing profile:", error.message);
+    res.status(500).json({ error: "Failed to edit profile" });
+  }
+};
 
 
 

@@ -45,16 +45,18 @@ const AddPostModal = ({ open, onClose }) => {
   const { userData, posts } = useContext(StoreContext); 
 
   const handlePost = async () => {
+    console.log("clicked");
     if (!postContent.trim()) {
       setError('Post content cannot be empty.');
       return;
     }
+    console.log("clicked2");
 
     setLoading(true);
     setError('');
 
     const formData = new FormData();
-    formData.append('user_id', userData.id); 
+    formData.append('user_id', userData._id); 
     formData.append('content', postContent); 
     if (postImage) {
       formData.append('postImage', postImage); 
@@ -67,6 +69,7 @@ const AddPostModal = ({ open, onClose }) => {
           'Content-Type': 'multipart/form-data',
         },
       });
+      setLoading(false);
 
       if (res.status === 201) {
         toast.success("Post Added");

@@ -7,6 +7,8 @@ import { Server } from "socket.io";
 import http from "http";
 import userRouter from "./routes/userRoutes.js";
 import postRouter from "./routes/postRoutes.js";
+import connectDB from "./config/db.js";
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -55,6 +57,10 @@ app.get("/", (req, res) => {
 
 app.use("/api/users", userRouter);
 app.use("/api",postRouter);
+
+
+connectDB()
+
 
 // Start the server
 server.listen(PORT, () => {

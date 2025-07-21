@@ -24,7 +24,7 @@ const navigate = useNavigate();
 
       if (response.status === 200) {
         
-        setUserData(response.data.user[0]);
+        setUserData(response.data.user);
         navigate("/");
 
       } else {
