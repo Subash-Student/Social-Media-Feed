@@ -45,10 +45,10 @@ if (filterOption === "liked") {
   
       if (isLiked) {
         // Remove like
-        await axios.delete(`http://localhost:5000/api/posts/${postId}/like/${userData._id}`);
+        await axios.delete(`${import.meta.env.VITE_API_URL}/api/posts/${postId}/like/${userData._id}`);
       } else {
         // Add like
-        await axios.post(`http://localhost:5000/api/posts/${postId}/like/${userData._id}`);
+        await axios.post(`${import.meta.env.VITE_API_URL}/api/posts/${postId}/like/${userData._id}`);
       }
   
       // Update the local state
@@ -76,7 +76,7 @@ if (filterOption === "liked") {
     if (!text?.trim()) return;
 
     try {
-      const response = await axios.post(`http://localhost:5000/api/posts/${postId}/comments`, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/posts/${postId}/comments`, {
         user: userData.username, 
         text,
       });
@@ -114,7 +114,7 @@ if (filterOption === "liked") {
     });
 
     try {
-      const response = await axios.delete(`http://localhost:5000/api/posts/${postId}/comments/${commentIndex}`);
+      const response = await axios.delete(`${import.meta.env.VITE_API_URL}/api/posts/${postId}/comments/${commentIndex}`);
     } catch (error) {
       console.log(error);
     }

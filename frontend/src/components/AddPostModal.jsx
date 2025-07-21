@@ -64,7 +64,7 @@ const AddPostModal = ({ open, onClose }) => {
     formData.append("profilePic", userData.profilePic);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/add-post', formData, {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/add-post`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

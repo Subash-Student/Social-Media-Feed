@@ -17,7 +17,7 @@ const navigate = useNavigate();
 
   const fetchUser = useCallback(async (token) => {
     try {
-      const response = await axios.get("http://localhost:5000/api/users/profile", {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/profile`, {
         headers: { token },
         withCredentials: true,
       });
@@ -39,7 +39,7 @@ const navigate = useNavigate();
 
   const fetchPosts = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/posts');
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/posts`);
       setPosts(res.data.posts);
     } catch (err) {
       console.log(err);

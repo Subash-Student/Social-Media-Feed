@@ -90,7 +90,7 @@ const UserProfileBox = () => {
     try {
       // Make an API request to save the updated profile
       setLoading(true)
-      const response = await axios.post('http://localhost:5000/api/users/edit-profile', formData, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/edit-profile`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           token: token,
