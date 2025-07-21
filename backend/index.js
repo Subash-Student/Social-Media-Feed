@@ -25,11 +25,12 @@ const io = new Server(server, {
 
 // CORS configuration for Express
 app.use(cors({
-    origin:"https://social-media-feed-sepia.vercel.app",
+    origin: "https://social-media-feed-sepia.vercel.app",
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: '*',
+    allowedHeaders: ['Content-Type', 'Authorization', 'token'],
     credentials: true,
 }));
+
 
 
 app.use(express.json());
