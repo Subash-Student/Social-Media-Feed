@@ -26,7 +26,7 @@ const io = new Server(server, {
 // CORS configuration for Express
 app.use(
   cors({
-    origin: "http://localhost:5173", // Allow only this origin
+    origin: "https://social-media-feed-sepia.vercel.app/login", // Allow only this origin
     credentials: true, // Allow credentials
   })
 );
